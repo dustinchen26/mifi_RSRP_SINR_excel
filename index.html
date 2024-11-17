@@ -1,0 +1,154 @@
+<!-- 
+  Copyright © [2023] [Dustin_Chen]. All rights reserved.
+  Author: Dustin_Chen
+  Email:  Dustin_Chen@compal.com or chuhpsdustin@gmail.com
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mifi_RSRP_SINR_excel</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      line-height: 1.2;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 80%;
+      height: 200px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 10px;
+    }
+
+    table {
+      width: 60%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    /* 控制每列寬度 */
+    th:nth-child(1), td:nth-child(1) {
+      width: 40%; /* Time column */
+    }
+    th:nth-child(2), td:nth-child(2) {
+      width: 20%; /* RSRQ column */
+    }
+    th:nth-child(3), td:nth-child(3) {
+      width: 20%; /* RSRP column */
+    }
+    th:nth-child(4), td:nth-child(4) {
+      width: 20%; /* SINR column */
+    }
+
+    /* 讓表格不被拉伸，防止列寬過大 */
+    table, th, td {
+      table-layout: fixed;
+    }
+  </style>
+  <!-- 引入 SheetJS 庫 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+  <script>
+    // 解析日誌並提取時間戳記、RSRQ、RSRP 和 SINR
+    function parseLog() {
+      var inputText = document.getElementById('logInput').value;
+
+      // 規則運算式來匹配時間戳記、RSRQ、RSRP 和 SINR
+      var regex = /(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})[\s\S]*?RSRQ\s*(-?\d+)\s*dB,\s*RSRP\s*(-?\d+)\s*dBm,\s*SINR\s*(\d+)\s*dB/g;
+
+      var matches = inputText.matchAll(regex);
+      var data = [];
+      var tableContent = '';
+
+      // 表頭（固定列名）
+      tableContent += `<tr><th>Time</th><th>RSRQ</th><th>RSRP</th><th>SINR</th></tr>`;
+
+      // 遍歷所有匹配的日誌條目
+      for (const match of matches) {
+        if (match && match.length === 5) {
+          // 提取時間戳記、RSRQ、RSRP 和 SINR
+          var row = [match[1], match[2], match[3], match[4]]; // 時間、RSRQ、RSRP、SINR
+          data.push(row);
+
+          // 為表格生成一行資料
+          tableContent += `<tr><td>${match[1]}</td><td>${match[2]}</td><td>${match[3]}</td><td>${match[4]}</td></tr>`;
+        }
+      }
+
+      // 顯示解析後的資料在網頁中的表格
+      document.getElementById('dataTable').innerHTML = tableContent;
+
+      // 匯出數據為 Excel
+      exportToExcel(data);
+    }
+
+    // 將解析的資料匯出為 Excel 檔
+    function exportToExcel(data) {
+      // 創建 Excel 工作表
+      var ws = XLSX.utils.aoa_to_sheet([['Time', 'RSRQ', 'RSRP', 'SINR'], ...data]);
+
+      // 創建工作簿
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'RSRQ_RSRP_SINR');
+
+      // 生成 Excel 檔並觸發下載
+      XLSX.writeFile(wb, 'RSRQ_RSRP_SINR_Data.xlsx');
+    }
+  </script>
+</head>
+
+<body>
+  <h2>mifi_RSRP_SINR_excel</h2>
+  <p style="margin: 0;">Author: Dustin_Chen, email: <a href="mailto:Dustin_Chen@compal.com"
+            style="line-height: 1;">Dustin_Chen@compal.com</a> or <a href="mailto:chuhpsdustin@gmail.com"
+            style="line-height: 1;">chuhpsdustin@gmail.com</a></p>
+	 
+  <ul>
+    <li>
+      <strong>將mifi以下結果貼到底下輸入框</strong>
+      <ul>
+        <li>(step1) adb shell</li>
+		<li>(step2 方法1) watch -n 5 'echo "$(date "+%Y-%m-%d %H:%M:%S")"; atcli at+cesqdbm'</li>
+		<li>(step2 方法2) watch -n 5 'echo "$(date "+%Y-%m-%d %H:%M:%S")"; atcli at+bnrinfo'</li>
+      </ul>
+    </li><br>
+
+  <textarea id="logInput" placeholder="Paste log data here..."></textarea>
+  <br>
+  <button onclick="parseLog()">Generate Excel & Display Table</button>
+
+  <!-- 結果表格顯示區域 -->
+  <h3>Parsed Data:</h3>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>RSRQ</th>
+        <th>RSRP</th>
+        <th>SINR</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 解析後的資料將插入這裡 -->
+    </tbody>
+  </table>	
+  </ul>
+
+</body>
+</html>
